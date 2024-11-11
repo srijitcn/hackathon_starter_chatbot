@@ -1,12 +1,12 @@
-#Hackathon Starter Chatbot
+# Hackathon Starter Chatbot
 This repo will have the code for agent based hackathon using langchain tools
 
-#Background:
+# Background:
 The intent of this repo is to provide starter code for developers in a Hackathon to write agent applications using Mosaic AI Agent Framework on Databricks Intelligent Platform. We will use LangChain library and notebooks. 
 
 The focus is to develop business logic and proof of concept instead of deployment patterns or scalability.
 
-#Objective
+# Objective
 To create an agentic application that is consistent with host business objectives that leverages the following emerging technologies
 - Vector Index Retriever ()
 - AI/BI Genie Api ()
@@ -19,7 +19,7 @@ To create an agentic application that is consistent with host business objective
   - Model Serving 
   - AI Gateway
 
-#Hack Evaluation Criteria
+# Hack Evaluation Criteria
 - Required:
   - Must include one retriever
   - Must have Guardrails
@@ -29,7 +29,7 @@ To create an agentic application that is consistent with host business objective
   - MLflow Evaluation based on examples gets bonus points
   - Use of Genie Tool gets extra points
 
-#Judging Categories
+# Judging Categories
 - Innovation and Problem-Solving
 - Usability and User Experience
 - Scalability and Technical Feasibility 
