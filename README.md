@@ -1,5 +1,5 @@
 # Hackathon Starter Chatbot
-This repo will have the code for agent based hackathon using langchain tools
+This repo will have the code for agent based hackathon using langchain tools. This agent will enable Natural Language Question Answer on structured and unstructured data. We will use **COVID-19 Clinical Trials dataset** from [Kaggle](https://www.kaggle.com/datasets/parulpandey/covid19-clinical-trials-dataset)
 
 # Background:
 The intent of this repo is to provide starter code for developers in a Hackathon to write agent applications using Mosaic AI Agent Framework on Databricks Intelligent Platform. We will use LangChain library and notebooks. 
