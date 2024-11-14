@@ -28,6 +28,7 @@ To create an agentic application that is consistent with host business objective
   - Deployed endpoint get bonus points
   - MLflow Evaluation based on examples gets bonus points
   - Use of Genie Tool gets extra points
+  - Deploy the agent as a Lakehouse App will get bonus points
 
 # Judging Categories
 - Innovation and Problem-Solving
