@@ -17,6 +17,8 @@ from pyspark.sql.functions import udf
 from pyspark.sql.types import StructType, StructField, StringType, DateType, DoubleType, IntegerType, LongType
 from datetime import datetime, date
 
+#function to convert given dates tring to date type
+#we see dates with and without day of the month
 def convert_date_str_to_date(date_str:str):
   if date_str is not None:
     date_str = date_str.replace(",","")
