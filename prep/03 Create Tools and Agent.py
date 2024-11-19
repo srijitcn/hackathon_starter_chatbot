@@ -277,6 +277,212 @@ class CovidTrialTitleRAG(BaseRAG):
 
 # MAGIC %md
 # MAGIC ### AI/BI Genie Tool
+# MAGIC A tool that can be customized to interact with a AI/BI Genie room
+
+# COMMAND ----------
+
+from databricks.sdk.service.dashboards import GenieAPI
+from databricks.sdk import WorkspaceClient
+
+
+class GenieAPIWrapper:
+    def __init__(
+        self,
+        space_id,
+        encountered_error_user_message: str = "I encountered an error trying to answer your question, please try again.",
+    ):
+        self.space_id = space_id
+
+        self.headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
+
+        workspace_client = WorkspaceClient()
+        self._genie_client = workspace_client.genie
+        self.encountered_error_user_message = encountered_error_user_message
+
+        # We build the GenieResponse throughout this wrapper's logic since you must poll for the result & the results come back from multiple polling requests.
+        self.genie_result = GenieResponse()
+
+    @mlflow.trace()
+    def start_conversation(self, content):
+        resp = self._genie_client._api.do(
+            "POST",
+            f"/api/2.0/genie/spaces/{self.space_id}/start-conversation",
+            body={"content": content},
+            headers=self.headers,
+        )
+        return resp
+
+    @mlflow.trace()
+    def create_message(self, conversation_id, content):
+        resp = self._genie_client._api.do(
+            "POST",
+            f"/api/2.0/genie/spaces/{self.space_id}/conversations/{conversation_id}/messages",
+            body={"content": content},
+            headers=self.headers,
+        )
+        return resp
+
+    @mlflow.trace()
+    def poll_for_result(self, conversation_id, message_id):
+        @mlflow.trace()
+        def poll_result():
+            iteration_count = 0
+            while True and iteration_count < MAX_ITERATIONS:
+                # try:  # genie API randomly crashes with BadRequest: Message <id> does not have a query statementId.  This is instead caught in the Agent itself to capture all unknown exceptions from the API wrapper.
+                iteration_count += 1
+                logging.debug(
+                    f"Polling for result {message_id} {conversation_id} iteration {iteration_count}"
+                )
+                resp = self._genie_client._api.do(
+                    "GET",
+                    f"/api/2.0/genie/spaces/{self.space_id}/conversations/{conversation_id}/messages/{message_id}",
+                    headers=self.headers,
+                )
+                logging.debug(f"Genie polling response: {resp}")
+                if resp["status"] == "EXECUTING_QUERY":
+                    with mlflow.start_span(name="get_sql_query") as span:
+                        query_result = next(
+                            r for r in resp["attachments"] if "query" in r
+                        )["query"]
+                        span.set_inputs(resp)
+                        self.genie_result.sql_query = query_result.get("query")
+                        self.genie_result.response = query_result.get("description")
+                        span.set_outputs(
+                            {
+                                "sql_query": self.genie_result.sql_query,
+                                "response": self.genie_result.response,
+                            }
+                        )
+                    return poll_query_results()
+                elif resp["status"] == "COMPLETED":
+                    """
+                    Genie didn't run a query, returned a question or comment to the user
+                    """
+                    with mlflow.start_span(name="get_genie_response") as span:
+                        logging.debug(f"Genie polling returned {resp}")
+                        span.set_inputs(resp)
+                        # Get first attachment from array safely
+                        first_attachment = (
+                            resp.get("attachments", [])[0]
+                            if resp.get("attachments")
+                            else None
+                        )
+                        if first_attachment:
+                            # TODO: we shouldn't need this logic, but it's here to handle a bug in the Genie API where sometimes you get COMPLETED before EXECUTING_QUERY is returned.
+                            if "text" in first_attachment:
+                                # genie didn't run a query, just returned a question or comment to the user
+                                response = first_attachment["text"]["content"]
+                                self.genie_result.response = response
+                                span.set_outputs(
+                                    {"response": self.genie_result.response}
+                                )
+                                return asdict(self.genie_result)
+                            elif "query" in first_attachment:
+                                # genie ran a query, get the results
+                                response = first_attachment["query"]["description"]
+                                self.genie_result.sql_query = first_attachment["query"][
+                                    "query"
+                                ]
+                                self.genie_result.response = first_attachment["query"][
+                                    "description"
+                                ]
+                                span.set_outputs(
+                                    {
+                                        "sql_query": self.genie_result.sql_query,
+                                        "response": self.genie_result.response,
+                                    }
+                                )
+                                return poll_query_results()
+                            else:
+                                # unknown state, assume an error state
+                                self.genie_result.response = (
+                                    self.encountered_error_user_message
+                                )
+                                span.set_outputs(
+                                    {"response": self.genie_result.response}
+                                )
+                                return asdict(self.genie_result)
+                        else:
+                            # no response, must be an error state
+                            self.genie_result.response = (
+                                self.encountered_error_user_message
+                            )
+                            span.set_outputs({"response": self.genie_result.response})
+                            return asdict(self.genie_result)
+
+                elif resp["status"] == "FAILED":
+                    """
+                    Genie failed
+                    """
+                    self.genie_result.response = self.encountered_error_user_message
+                    return asdict(self.genie_result)
+                else:
+                    logging.debug(f"Waiting...: {resp['status']}")
+                    time.sleep(1)
+                # except Exception as e:  # hack per above
+                #     logging.error(
+                #         f"Error polling for result: {e}, in polling iteration {iteration_count} of {MAX_ITERATIONS}"
+                #     )
+                #     print(iteration_count)
+                #     continue
+
+        @mlflow.trace()
+        def poll_query_results():
+            iteration_count = 0
+            while True and iteration_count < MAX_ITERATIONS:
+                iteration_count += 1
+                resp = self._genie_client._api.do(
+                    "GET",
+                    f"/api/2.0/genie/spaces/{self.space_id}/conversations/{conversation_id}/messages/{message_id}/query-result",
+                    headers=self.headers,
+                )["statement_response"]
+
+                state = resp["status"]["state"]
+                if state == "SUCCEEDED":
+                    with mlflow.start_span(name="get_sql_query_results") as span:
+                        span.set_inputs(resp)
+                        data_table_as_md = _parse_query_result(resp)
+                        self.genie_result.data_table = data_table_as_md
+                        span.set_outputs(self.genie_result.data_table)
+                    return asdict(self.genie_result)
+                elif state == "RUNNING" or state == "PENDING":
+                    logging.debug("Waiting for query result...")
+                    time.sleep(1)
+                else:
+                    logging.debug(f"No query result: {resp['state']}")
+                    return None
+
+        return poll_result()
+
+    @mlflow.trace(span_type="AGENT", name="genie")
+    def ask_question(self, question):
+        self.genie_result = GenieResponse()
+        resp = self.start_conversation(question)
+        return self.poll_for_result(resp["conversation_id"], resp["message_id"])
+
+# COMMAND ----------
+
+w.apps.list()
+
+
+# COMMAND ----------
+
+a = w.genie
+
+# COMMAND ----------
+
+w.genie.
+
+# COMMAND ----------
+
+w.genie.start_conversation("01efa5d3862c1317969a569e3cdfcb1c","How many trials are in Recruiting status")
+
+# COMMAND ----------
+
+w.genie.start_conversation_and_wait("01efa5d3862c1317969a569e3cdfcb1c","How many trials are in Recruiting status")
 
 # COMMAND ----------
 

@@ -1,5 +1,5 @@
 # Databricks notebook source
-# MAGIC %pip install -q mlflow==2.16.2 databricks-vectorsearch==0.40 databricks-sdk==0.28.0 langchain==0.3.0 langchain-community==0.3.0 mlflow[databricks] databricks-agents==0.6.0 
+# MAGIC %pip install -q mlflow==2.16.2 databricks-vectorsearch==0.40 databricks-sdk==0.38.0 langchain==0.3.0 langchain-community==0.3.0 mlflow[databricks] databricks-agents==0.6.0 
 # MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
