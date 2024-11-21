@@ -63,11 +63,29 @@ try:
     
     print(f"Endpoint named {vector_search_endpoint_name} is ready.")
 
+    ep = vsc.get_endpoint(name=vector_search_endpoint_name)
+
 except Exception as e:
     if "already exists" in str(e):
         print(f"Endpoint named {vector_search_endpoint_name} already exists.")
+        ep = vsc.get_endpoint(name=vector_search_endpoint_name)
     else:
         raise e
+
+# COMMAND ----------
+
+#giving all workspace users USE access to the endpoint
+
+from databricks.sdk.service import iam
+from databricks.sdk import WorkspaceClient
+
+w = WorkspaceClient()
+w.permissions.set(request_object_type="vector-search-endpoints",
+                  request_object_id=ep["id"],
+                  access_control_list=[
+                        iam.AccessControlRequest(group_name="users",
+                                                   permission_level=iam.PermissionLevel.CAN_MANAGE)
+                      ])
 
 # COMMAND ----------
 
@@ -137,6 +155,10 @@ except Exception as e:
                                                 covid_trial_title_index_vector_index_name)
     else:
         raise e
+
+# COMMAND ----------
+
+spark.sql(f"GRANT SELECT ON TABLE {covid_trial_title_index_vector_index_name} TO `account users` ")
 
 # COMMAND ----------
 
