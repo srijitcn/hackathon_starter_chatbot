@@ -4,12 +4,12 @@ math_tool:
 web_search_tool:
   api_key_environment_var : brave_api_key
 
-input_example:
+helper_agent_input_example:
   messages:
   - content: How many Florida fit in India?
     role: user
 
-agent_config:
+helper_agent_llm_config:
   llm_endpoint_name: databricks-meta-llama-3-1-405b-instruct
   llm_parameters:
     max_tokens: 2000

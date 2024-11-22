@@ -1,11 +1,24 @@
+multi_agent_llm_config:
+  llm_endpoint_name: srijit_nair_openai
+  llm_parameters:
+    max_tokens: 2000
+    temperature: 0.01
+
+math_tool:
+  llm_endpoint_name: databricks-meta-llama-3-1-405b-instruct
+
+web_search_tool:
+  api_key_environment_var : BRAVE_API_KEY
+
+helper_agent_llm_config:
+  llm_endpoint_name: databricks-meta-llama-3-1-405b-instruct
+  llm_parameters:
+    max_tokens: 2000
+    temperature: 0.01
+
 databricks_resources:
   llm_endpoint_name: databricks-dbrx-instruct
   vector_search_endpoint_name: covid_trials_vs_endpoint
-
-input_example:
-  messages:
-  - content: Which studies research on pregnancy and covid?
-    role: user
 
 rag_agent_llm_config:
   llm_endpoint_name: databricks-dbrx-instruct
@@ -34,3 +47,8 @@ retriever_config:
   parameters:
       k: 3
       query_type: ann
+
+input_example:
+  messages:
+  - content: How many Florida fit in India?
+    role: user

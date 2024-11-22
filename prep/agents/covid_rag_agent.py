@@ -1,5 +1,5 @@
 import mlflow
-
+import os
 from pydantic import BaseModel, Field
 from typing import Optional, Type, List, Union
 
@@ -14,6 +14,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_databricks import ChatDatabricks
 from langchain_core.prompts import ChatPromptTemplate
 from langchain.vectorstores import DatabricksVectorSearch
+
+from mlflow.langchain.output_parsers import ChatCompletionsOutputParser
 
 from operator import itemgetter
 
@@ -74,7 +76,9 @@ def format_query_results_documents(documents):
 mlflow.langchain.autolog()
 
 #Read config file
-chain_config = mlflow.models.ModelConfig(development_config="config/rag_agent_config.yaml")
+#this config file will be used for dev and test
+#when the model is logged, the config file will be overwritten
+rag_chain_config = mlflow.models.ModelConfig(development_config="config/rag_agent_config.yaml")
 
 #########################
 #Create vector store retriever
@@ -83,8 +87,16 @@ chain_config = mlflow.models.ModelConfig(development_config="config/rag_agent_co
 
 
 #Connect to the Vector Search Index
-retriever_config=chain_config.get("retriever_config")
-vs_client = VectorSearchClient(disable_notice=True)
+retriever_config=rag_chain_config.get("retriever_config")
+client_id_environment_var = retriever_config.get("client_id_environment_var").upper()
+client_secret_environment_var = retriever_config.get("client_secret_environment_var").upper()
+workspace_url_environment_var = retriever_config.get("workspace_url_environment_var").upper()
+
+vs_client = VectorSearchClient(
+    workspace_url=os.getenv(workspace_url_environment_var),
+    service_principal_client_id=os.getenv(client_id_environment_var),
+    service_principal_client_secret=os.getenv(client_secret_environment_var),
+)
 vs_index = vs_client.get_index(
     endpoint_name=retriever_config.get("vector_search_endpoint_name"),
     index_name=retriever_config.get("vector_search_index"),
@@ -102,7 +114,7 @@ db_retriever = DatabricksVectorSearch(
 #########################
 #Define prompt
 
-model_config = chain_config.get("llm_config") 
+model_config = rag_chain_config.get("rag_agent_llm_config") 
 
 prompt = ChatPromptTemplate.from_messages(
   [  

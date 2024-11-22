@@ -1,26 +1,29 @@
-from langchain.chat_models import ChatDatabricks
-
-from langchain.prompts import ChatPromptTemplate
-from langchain.chains import LLMChain
-from langchain.tools import BaseTool, StructuredTool, tool
-from langchain.callbacks.manager import (AsyncCallbackManagerForToolRun, CallbackManagerForToolRun)
-from langchain_community.tools import BraveSearch
-from langchain.agents import AgentExecutor, create_react_agent, create_tool_calling_agent
-from langchain.prompts import ChatPromptTemplate
-from langchain import hub
-from langchain_core.output_parsers import StrOutputParser
-from langchain.schema.runnable import RunnableLambda, RunnablePassthrough
-from operator import itemgetter
-
-from pydantic import BaseModel, Field
-from typing import Optional, Type, List, Union
 import mlflow
 import json 
 import os
 from bs4 import BeautifulSoup
 from datetime import datetime
 
-chain_config = mlflow.models.ModelConfig(development_config="config/helper_agent_config.yaml")
+
+from langchain.chat_models import ChatDatabricks
+from langchain.prompts import ChatPromptTemplate
+from langchain.chains import LLMChain
+from langchain.tools import BaseTool, StructuredTool, tool
+from langchain.callbacks.manager import (AsyncCallbackManagerForToolRun, CallbackManagerForToolRun)
+from langchain_community.tools import BraveSearch
+from langchain.agents import AgentExecutor, create_react_agent, create_tool_calling_agent
+from langchain import hub
+from langchain_core.output_parsers import StrOutputParser
+from mlflow.langchain.output_parsers import ChatCompletionsOutputParser
+from langchain.schema.runnable import RunnableLambda, RunnablePassthrough
+from operator import itemgetter
+
+from pydantic import BaseModel, Field
+from typing import Optional, Type, List, Union
+
+#this config file will be used for dev and test
+#when the model is logged, the config file will be overwritten
+helper_chain_config = mlflow.models.ModelConfig(development_config="config/helper_agent_config.yaml")
 
 ###################################
 # Math Tool
@@ -101,8 +104,6 @@ class WebSearchTool:
     name : str = "WebSearchTool"
     description : str = "Useful for performing general search on Internet and return a sigle string result"
     args_schema : Type[BaseModel] = WebSearchToolInput
-    api_key_secret_scope:str = None
-    api_key_secret_key:str = None
         
     def __init__(self, api_key):
         super().__init__()
@@ -144,21 +145,21 @@ def get_todays_date(unnecessary:str):
 # It provides a flexible and customizable way to run an agent, allowing users to specify the tools and memory to be used.
 
 #instantiate the tools
-math_tool_model_endpoint =  chain_config.get("math_tool").get("llm_endpoint_name")
+math_tool_model_endpoint =  helper_chain_config.get("math_tool").get("llm_endpoint_name")
 math_tool = MathTool(chat_model_endpoint_name=math_tool_model_endpoint)
 
-api_key_env_var = chain_config.get("web_search_tool").get("api_key_environment_var")
+api_key_env_var = helper_chain_config.get("web_search_tool").get("api_key_environment_var").upper()
 web_tool = WebSearchTool(api_key=os.environ[api_key_env_var]).get_tool()
 
 
 #agent
 
 #lets use the llama 3.1 405b model for our Agent
-agent_model_config = chain_config.get("agent_config")
+helper_agent_model_config = helper_chain_config.get("helper_agent_llm_config")
 #define the model class for agent that uses the endpoint
 agent_chat_model = ChatDatabricks(
-    endpoint=agent_model_config.get("llm_endpoint_name"),
-    extra_params=agent_model_config.get("llm_parameters"),
+    endpoint=helper_agent_model_config.get("llm_endpoint_name"),
+    extra_params=helper_agent_model_config.get("llm_parameters"),
 )
 
 #define the tools that is available to the agent
