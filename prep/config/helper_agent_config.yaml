@@ -15,3 +15,7 @@ helper_agent_llm_config:
     max_tokens: 2000
     temperature: 0.01
 
+input_example:
+  messages:
+  - content: How many Florida fit in India?
+    role: user

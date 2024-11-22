@@ -17,10 +17,8 @@ spark.sql(f"CREATE CATALOG IF NOT EXISTS {catalog}")
 
 spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
 spark.sql(f"GRANT CREATE, USAGE on DATABASE {catalog}.{schema} TO `account users`")
-spark.sql(f"ALTER SCHEMA {catalog}.{schema} OWNER TO `account users`")
 
 spark.sql(f"CREATE VOLUME IF NOT EXISTS {catalog}.{schema}.{data_folder}")
-
 
 # COMMAND ----------
 
@@ -38,8 +36,4 @@ with w.workspace.download(f"/{project_root_path}/resources/{covid_data_file_name
   data = f.read()
 
 w.files.upload(file_path=f"/Volumes/{catalog}/{schema}/{data_folder}/{covid_data_file_name}", contents=data)
-
-
-# COMMAND ----------
-
 

@@ -24,9 +24,10 @@ print(response)
 
 # COMMAND ----------
 
-import os
-
 set_mlflow_experiment("covid19_agent")
+
+## Tell MLflow logging where to find your chain.
+mlflow.models.set_model(model=covid_rag_chain)
 
 with mlflow.start_run(run_name="covid_rag"):
   logged_chain_info = mlflow.langchain.log_model(

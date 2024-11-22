@@ -177,7 +177,3 @@ if results["result"]["row_count"] >0:
   display(results["result"]["data_array"])
 else:
   print("No records")
-
-# COMMAND ----------
-
-

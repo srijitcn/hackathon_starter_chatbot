@@ -23,6 +23,9 @@ response = helper_chain.invoke({"messages":[{"content": "How many florida can fi
 
 set_mlflow_experiment("covid19_agent")
 
+## Tell MLflow logging where to find your chain.
+mlflow.models.set_model(model=helper_chain)
+
 with mlflow.start_run(run_name="helper_agent"):
   logged_chain_info = mlflow.langchain.log_model(
           #Note: In classical ML, MLflow works by serializing the model object.  In generative AI, chains often include Python packages that do not serialize.  Here, we use MLflow's new code-based logging, where we saved our chain under the chain notebook and will use this code instead of trying to serialize the object.

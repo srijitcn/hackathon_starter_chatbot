@@ -132,7 +132,3 @@ spark.sql(f"ALTER TABLE {catalog}.{schema}.{covid_data_table_name} ALTER COLUMN 
 spark.sql(f"ALTER TABLE {catalog}.{schema}.{covid_data_table_name} ADD CONSTRAINT {covid_data_table_name}_pk PRIMARY KEY( nct_number )")
 
 spark.sql(f"ALTER TABLE {catalog}.{schema}.{covid_data_table_name} SET TBLPROPERTIES (delta.enableChangeDataFeed = true) ")
-
-# COMMAND ----------
-
-

@@ -27,6 +27,9 @@ import os
 
 set_mlflow_experiment("covid19_agent")
 
+## Tell MLflow logging where to find your chain.
+mlflow.models.set_model(model=graph_with_parser)
+
 with mlflow.start_run(run_name="multi_agent"):
   logged_chain_info = mlflow.langchain.log_model(
           #Note: In classical ML, MLflow works by serializing the model object.  In generative AI, chains often include Python packages that do not serialize.  Here, we use MLflow's new code-based logging, where we saved our chain under the chain notebook and will use this code instead of trying to serialize the object.
@@ -41,11 +44,6 @@ with mlflow.start_run(run_name="multi_agent"):
           input_example=multi_agent_config.get("input_example"),
           example_no_conversion=True  # Required by MLflow to use the input_example as the chain's schema     
   )
-
-# COMMAND ----------
-
-#loaded_chain = mlflow.langchain.load_model(logged_chain_info.model_uri)
-#loaded_chain.invoke(multi_agent_config.get("input_example"))
 
 # COMMAND ----------
 
@@ -76,12 +74,4 @@ deployment_info = agents.deploy(
         workspace_url_environment_var : db_host_url
     }
 )
-
-
-# COMMAND ----------
-
-print(api_key_env_var)
-
-# COMMAND ----------
-
 

@@ -195,6 +195,4 @@ helper_chain = (itemgetter("messages")
          | StrOutputParser()
 )
 
-mlflow.models.set_model(model=helper_chain)
-
 
