@@ -40,12 +40,18 @@ rag_chain_config = mlflow.models.ModelConfig(development_config="config/rag_agen
 
 #Connect to the Vector Search Index
 retriever_config=rag_chain_config.get("retriever_config")
+pat_environment_var = retriever_config.get("pat_environment_var").upper()
 client_id_environment_var = retriever_config.get("client_id_environment_var").upper()
 client_secret_environment_var = retriever_config.get("client_secret_environment_var").upper()
 workspace_url_environment_var = retriever_config.get("workspace_url_environment_var").upper()
 
+pat = os.getenv(pat_environment_var, None)
+service_principal_client_id=os.getenv(client_id_environment_var,None),
+service_principal_client_secret=os.getenv(client_secret_environment_var,None),
+
 vs_client = VectorSearchClient(
     workspace_url=os.getenv(workspace_url_environment_var),
+    personal_access_token=pat,
     service_principal_client_id=os.getenv(client_id_environment_var),
     service_principal_client_secret=os.getenv(client_secret_environment_var),
 )

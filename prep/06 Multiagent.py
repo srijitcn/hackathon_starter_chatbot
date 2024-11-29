@@ -6,6 +6,7 @@
 import os
 
 os.environ["BRAVE_API_KEY"] = dbutils.secrets.get("multi_agent","web_search_api_key")
+#os.environ["VECTOR_SEARCH_PAT"] = dbutils.secrets.get("multi_agent","pat")
 os.environ["VECTOR_SEARCH_CLIENT_ID"] = dbutils.secrets.get("multi_agent","vector_search_client_id")
 os.environ["VECTOR_SEARCH_CLIENT_SECRET"] = dbutils.secrets.get("multi_agent","vector_search_client_secret")
 os.environ["WORKSPACE_URL"] = db_host_url
@@ -59,19 +60,27 @@ uc_registered_model_info = mlflow.register_model(model_uri=logged_chain_info.mod
 from databricks import agents
 
 api_key_env_var = multi_agent_config.get("web_search_tool").get("api_key_environment_var").upper()
+pat_environment_var = multi_agent_config.get("retriever_config").get("pat_environment_var").upper()
 client_id_environment_var = multi_agent_config.get("retriever_config").get("client_id_environment_var").upper()
 client_secret_environment_var = multi_agent_config.get("retriever_config").get("client_secret_environment_var").upper()
 workspace_url_environment_var = multi_agent_config.get("retriever_config").get("workspace_url_environment_var").upper()
+
+env_vars = {
+    api_key_env_var : dbutils.secrets.get("multi_agent","web_search_api_key"),
+    client_id_environment_var : dbutils.secrets.get("multi_agent","vector_search_client_id"),
+    client_secret_environment_var : dbutils.secrets.get("multi_agent","vector_search_client_secret"),
+    workspace_url_environment_var : db_host_url
+} if dbutils.secrets.get("multi_agent","vector_search_client_id") is not None else {
+    api_key_env_var : dbutils.secrets.get("multi_agent","web_search_api_key"),
+    pat_environment_var : dbutils.secrets.get("multi_agent","pat"),
+    workspace_url_environment_var : db_host_url
+}
+
 
 deployment_info = agents.deploy(
     model_name=uc_model_name,
     model_version=uc_registered_model_info.version,
     scale_to_zero=True,
-    environment_vars={
-        api_key_env_var : dbutils.secrets.get("multi_agent","web_search_api_key"),
-        client_id_environment_var : dbutils.secrets.get("multi_agent","vector_search_client_id"),
-        client_secret_environment_var : dbutils.secrets.get("multi_agent","vector_search_client_secret"),
-        workspace_url_environment_var : db_host_url
-    }
+    environment_vars=env_vars
 )
 
