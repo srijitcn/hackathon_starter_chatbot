@@ -66,7 +66,7 @@ genie_config = multi_agent_config.get("genie_agent_config")
 genie_space_id =  genie_config.get("genie_space_id")
 genie_agent = GenieAgent(genie_space_id=genie_space_id,
                          genie_agent_name="GenieAgent",
-                         description="This Genie Agent will have all data about COVID Trials and related articles")
+                         description="An agent to query Genie Database and answer queries related to COVID Trials")
 
 
 ###################
@@ -79,7 +79,7 @@ members = [
     },
     {"name": "GenieAgent",
      "chain": functools.partial(agent_node, agent=genie_agent, name="GenieAgent"), 
-     "description": "An agent for answering questions about COVID-19 Research and Studies."
+     "description": "An agent to query Genie Database and answer queries related to COVID Trials"
     },
     {"name": "GeneralHelperAgent",
      "chain": functools.partial(agent_node, agent=helper_chain, name="GeneralHelperAgent"), 
@@ -101,8 +101,11 @@ options = ["FINISH"] + member_names
 class RouteResponse(BaseModel):
     next: Literal[tuple(options)]
 
+def cleanup(in_str : str) -> str:
+    return in_str.replace("'","").replace('"','')
+
 def create_next(response):
-    return RouteResponse(next=response.content)
+    return RouteResponse(next=cleanup(response.content))
 
 def supervisor_agent(state):
     supervisor_chain = prompt | multi_agent_llm | RunnableLambda(create_next)

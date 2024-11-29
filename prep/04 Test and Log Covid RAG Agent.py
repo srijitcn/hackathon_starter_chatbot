@@ -4,9 +4,9 @@
 # COMMAND ----------
 
 import os
-#os.environ["VECTOR_SEARCH_PAT"] = dbutils.secrets.get("multi_agent","pat")
-os.environ["VECTOR_SEARCH_CLIENT_ID"] = dbutils.secrets.get("multi_agent","vector_search_client_id")
-os.environ["VECTOR_SEARCH_CLIENT_SECRET"] = dbutils.secrets.get("multi_agent","vector_search_client_secret")
+os.environ["VECTOR_SEARCH_PAT"] = dbutils.secrets.get("multi_agent","pat")
+#os.environ["VECTOR_SEARCH_CLIENT_ID"] = dbutils.secrets.get("multi_agent","vector_search_client_id")
+#os.environ["VECTOR_SEARCH_CLIENT_SECRET"] = dbutils.secrets.get("multi_agent","vector_search_client_secret")
 os.environ["WORKSPACE_URL"] = db_host_url
 
 from agents.covid_rag_agent import covid_rag_chain, rag_chain_config

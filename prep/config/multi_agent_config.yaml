@@ -16,7 +16,7 @@ helper_agent_llm_config:
     max_tokens: 2000
     temperature: 0.01
 
-genie_aagent_config:
+genie_agent_config:
   genie_space_id: 01efae624eb11421a468187406487ff4
 
 databricks_resources:

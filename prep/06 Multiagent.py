@@ -6,9 +6,9 @@
 import os
 
 os.environ["BRAVE_API_KEY"] = dbutils.secrets.get("multi_agent","web_search_api_key")
-#os.environ["VECTOR_SEARCH_PAT"] = dbutils.secrets.get("multi_agent","pat")
-os.environ["VECTOR_SEARCH_CLIENT_ID"] = dbutils.secrets.get("multi_agent","vector_search_client_id")
-os.environ["VECTOR_SEARCH_CLIENT_SECRET"] = dbutils.secrets.get("multi_agent","vector_search_client_secret")
+os.environ["VECTOR_SEARCH_PAT"] = dbutils.secrets.get("multi_agent","pat")
+#os.environ["VECTOR_SEARCH_CLIENT_ID"] = dbutils.secrets.get("multi_agent","vector_search_client_id")
+#os.environ["VECTOR_SEARCH_CLIENT_SECRET"] = dbutils.secrets.get("multi_agent","vector_search_client_secret")
 os.environ["WORKSPACE_URL"] = db_host_url
 
 
@@ -21,6 +21,10 @@ graph_with_parser.invoke({"messages":[{"content": "How many florida can fit iin 
 # COMMAND ----------
 
 graph_with_parser.invoke({"messages":[{"content": "What are covid studies realted to pregnancy?" , "role": "user"}] })
+
+# COMMAND ----------
+
+graph_with_parser.invoke({"messages":[{"content": "How many COVID trials are in Recruiting status?" , "role": "user"}] })
 
 # COMMAND ----------
 
@@ -38,7 +42,7 @@ with mlflow.start_run(run_name="multi_agent"):
           model_config="config/multi_agent_config.yaml", 
           artifact_path="chain", # Required by MLflow, the chain's code/config are saved in this directory
           extra_pip_requirements=["mlflow",
-                                  "databricks-langchain"
+                                  "databricks-langchain",
                                   "langchain-community",
                                   "langgraph",
                                   "beautifulsoup4"],
@@ -71,12 +75,11 @@ env_vars = {
     client_id_environment_var : dbutils.secrets.get("multi_agent","vector_search_client_id"),
     client_secret_environment_var : dbutils.secrets.get("multi_agent","vector_search_client_secret"),
     workspace_url_environment_var : db_host_url
-} if dbutils.secrets.get("multi_agent","vector_search_client_id") is not None else {
+} if "vector_search_client_id" in [s.key for s in dbutils.secrets.list("multi_agent")] else {
     api_key_env_var : dbutils.secrets.get("multi_agent","web_search_api_key"),
     pat_environment_var : dbutils.secrets.get("multi_agent","pat"),
     workspace_url_environment_var : db_host_url
 }
-
 
 deployment_info = agents.deploy(
     model_name=uc_model_name,
@@ -84,4 +87,8 @@ deployment_info = agents.deploy(
     scale_to_zero=True,
     environment_vars=env_vars
 )
+
+
+# COMMAND ----------
+
 
