@@ -38,6 +38,7 @@ with mlflow.start_run(run_name="multi_agent"):
           model_config="config/multi_agent_config.yaml", 
           artifact_path="chain", # Required by MLflow, the chain's code/config are saved in this directory
           extra_pip_requirements=["mlflow",
+                                  "databricks-langchain"
                                   "langchain-community",
                                   "langgraph",
                                   "beautifulsoup4"],
