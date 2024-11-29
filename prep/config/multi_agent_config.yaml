@@ -16,6 +16,9 @@ helper_agent_llm_config:
     max_tokens: 2000
     temperature: 0.01
 
+genie_aagent_config:
+  genie_space_id: 01efae624eb11421a468187406487ff4
+
 databricks_resources:
   llm_endpoint_name: databricks-dbrx-instruct
   vector_search_endpoint_name: covid_trials_vs_endpoint

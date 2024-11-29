@@ -19,6 +19,8 @@ from langchain.chat_models import ChatDatabricks
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.runnables import RunnableLambda
 
+from databricks_langchain.genie import GenieAgent
+
 from langgraph.graph import END, StateGraph, START
 from langgraph.prebuilt import create_react_agent
 
@@ -40,6 +42,7 @@ multi_agent_llm = ChatDatabricks(
     extra_params=multi_agent_llm_config.get("llm_parameters"),
 )
 
+
 def agent_node(state, agent, name):
     result = agent.invoke(state)
     if isinstance(result, str):
@@ -56,12 +59,26 @@ def get_final_message(resp):
     print(resp)
     return resp["messages"][-1]
 
+
+###################
+#Create a genie agent
+genie_config = multi_agent_config.get("genie_agent_config")
+genie_space_id =  genie_config.get("genie_space_id")
+genie_agent = GenieAgent(genie_space_id=genie_space_id,
+                         genie_agent_name="GenieAgent",
+                         description="This Genie Agent will have all data about COVID Trials and related articles")
+
+
 ###################
 #Wire up everything
 
 members = [
     {"name": "CovidRagAgent",
      "chain": functools.partial(agent_node, agent=covid_rag_chain, name="CovidRagAgent"), 
+     "description": "An agent for answering questions about COVID-19 Research and Studies."
+    },
+    {"name": "GenieAgent",
+     "chain": functools.partial(agent_node, agent=genie_agent, name="GenieAgent"), 
      "description": "An agent for answering questions about COVID-19 Research and Studies."
     },
     {"name": "GeneralHelperAgent",
