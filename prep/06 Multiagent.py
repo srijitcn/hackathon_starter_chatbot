@@ -1,4 +1,9 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC
+
+# COMMAND ----------
+
 # MAGIC %run ./utils/init
 
 # COMMAND ----------
@@ -31,9 +36,6 @@ graph_with_parser.invoke({"messages":[{"content": "How many COVID trials are in 
 import os
 
 set_mlflow_experiment("covid19_agent")
-
-## Tell MLflow logging where to find your chain.
-mlflow.models.set_model(model=graph_with_parser)
 
 with mlflow.start_run(run_name="multi_agent"):
   logged_chain_info = mlflow.langchain.log_model(

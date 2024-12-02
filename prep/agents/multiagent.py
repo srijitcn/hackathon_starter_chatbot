@@ -142,3 +142,5 @@ graph = workflow.compile()
 # parse the output from the graph to get the final message, and then format into ChatCompletions
 graph_with_parser = graph | RunnableLambda(get_final_message) | ChatCompletionsOutputParser()
 
+## Tell MLflow logging where to find your chain.
+mlflow.models.set_model(model=graph_with_parser)
