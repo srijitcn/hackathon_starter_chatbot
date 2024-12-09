@@ -33,7 +33,35 @@ graph_with_parser.invoke({"messages":[{"content": "How many COVID trials are in 
 
 # COMMAND ----------
 
+#get the resources required by the chain
+multi_agent_config = mlflow.models.ModelConfig(development_config="config/multi_agent_config.yaml")
+
+multi_agent_llm_config = multi_agent_config.get("multi_agent_llm_config")
+genie_config = multi_agent_config.get("genie_agent_config")
+retriever_config=multi_agent_config.get("retriever_config")
+rag_agent_config = multi_agent_config.get("rag_agent_llm_config")
+
+multiagent_llm_endpoint=multi_agent_llm_config.get("llm_endpoint_name")
+genie_space_id =  genie_config.get("genie_space_id")
+math_tool_model_endpoint =  multi_agent_config.get("math_tool").get("llm_endpoint_name")
+vs_index_name=retriever_config.get("vector_search_index")
+rag_agent_llm_endpoint = rag_agent_config.get("llm_endpoint_name")
+
+print("########### Databricks Resources:")
+print(f"multiagent_llm_endpoint:{multiagent_llm_endpoint}")
+print(f"genie_space_id:{genie_space_id}")
+print(f"math_tool_model_endpoint:{math_tool_model_endpoint}")
+print(f"vs_index_name:{vs_index_name}")
+print(f"rag_agent_llm_endpoint:{rag_agent_llm_endpoint}")
+
+# COMMAND ----------
+
 import os
+from mlflow.models.resources import (
+    DatabricksServingEndpoint,
+    DatabricksVectorSearchIndex,
+    DatabricksGenieSpace
+)
 
 set_mlflow_experiment("covid19_agent")
 
@@ -50,7 +78,15 @@ with mlflow.start_run(run_name="multi_agent"):
                                   "beautifulsoup4"],
           code_paths = ["agents" ],
           input_example=multi_agent_config.get("input_example"),
-          example_no_conversion=True  # Required by MLflow to use the input_example as the chain's schema     
+          example_no_conversion=True,  # Required by MLflow to use the input_example as the chain's schema     
+          # Specify resources for automatic authentication passthrough
+          resources = [
+                DatabricksServingEndpoint(endpoint_name=multiagent_llm_endpoint),
+                DatabricksServingEndpoint(endpoint_name=math_tool_model_endpoint),
+                DatabricksServingEndpoint(endpoint_name=rag_agent_llm_endpoint),
+                DatabricksVectorSearchIndex(endpoint_name=vs_index_name),
+                DatabricksGenieSpace(genie_space_id=genie_space_id)
+          ]          
   )
 
 # COMMAND ----------

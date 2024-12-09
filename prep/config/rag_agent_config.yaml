@@ -26,8 +26,8 @@ rag_agent_llm_config:
 retriever_config:
   vector_search_endpoint_name: covid_trials_vs_endpoint
   vector_search_index: main.covid_trials.covid_data_title_index
-  workspace_url_environment_var: WORKSPACE_URL
-  pat_environment_var: VECTOR_SEARCH_PAT
+  workspace_url_environment_var: DATABRICKS_HOST
+  pat_environment_var: DATABRICKS_TOKEN
   client_id_environment_var: VECTOR_SEARCH_CLIENT_ID
   client_secret_environment_var: VECTOR_SEARCH_CLIENT_SECRET
   text_column: "title"
