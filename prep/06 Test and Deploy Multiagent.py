@@ -1,9 +1,4 @@
 # Databricks notebook source
-# MAGIC %md
-# MAGIC
-
-# COMMAND ----------
-
 # MAGIC %run ./utils/init
 
 # COMMAND ----------
@@ -84,7 +79,7 @@ with mlflow.start_run(run_name="multi_agent"):
                 DatabricksServingEndpoint(endpoint_name=multiagent_llm_endpoint),
                 DatabricksServingEndpoint(endpoint_name=math_tool_model_endpoint),
                 DatabricksServingEndpoint(endpoint_name=rag_agent_llm_endpoint),
-                DatabricksVectorSearchIndex(endpoint_name=vs_index_name),
+                DatabricksVectorSearchIndex(index_name=vs_index_name),
                 DatabricksGenieSpace(genie_space_id=genie_space_id)
           ]          
   )
@@ -125,8 +120,4 @@ deployment_info = agents.deploy(
     scale_to_zero=True,
     environment_vars=env_vars
 )
-
-
-# COMMAND ----------
-
 
