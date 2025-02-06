@@ -1,5 +1,5 @@
 math_tool:
-  llm_endpoint_name: databricks-meta-llama-3-1-405b-instruct
+  llm_endpoint_name: srijit_nair_openai
 
 web_search_tool:
   api_key_environment_var : brave_api_key
@@ -10,7 +10,7 @@ helper_agent_input_example:
     role: user
 
 helper_agent_llm_config:
-  llm_endpoint_name: databricks-meta-llama-3-1-405b-instruct
+  llm_endpoint_name: srijit_nair_openai
   llm_parameters:
     max_tokens: 2000
     temperature: 0.01

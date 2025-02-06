@@ -52,8 +52,11 @@ def format_query_results_documents(documents):
   return "\n\n".join(context_docs)
 
 def extract_user_query_string(chat_messages_array):
-    return chat_messages_array[-1]["content"]
+    return chat_messages_array[-1].content
 
+def output_extractor(agent_output:dict)->str:
+  response_txt = agent_output["output"]
+  return {"messages":[AIMessage(response_txt)]}
 
 rag_chain = (
       {
@@ -62,11 +65,11 @@ rag_chain = (
                    | RunnableLambda(extract_user_query_string)
                    | db_retriever
                    | RunnableLambda(format_query_results_documents)
-                   | StrOutputParser()
+                   | StrOutputParser()      
       } 
       | prompt
       | model
-      | StrOutputParser()  
+      | RunnableLambda(output_extractor)  
   )
 ## Tell MLflow logging where to find your chain.
 mlflow.models.set_model(model=rag_chain)

@@ -14,7 +14,7 @@ from langchain_community.tools import BraveSearch
 from langchain.agents import AgentExecutor, create_react_agent, create_tool_calling_agent
 from langchain import hub
 from langchain_core.output_parsers import StrOutputParser
-from mlflow.langchain.output_parsers import ChatCompletionsOutputParser
+from langchain_core.messages import AIMessage
 from langchain.schema.runnable import RunnableLambda, RunnablePassthrough
 from operator import itemgetter
 
@@ -184,16 +184,16 @@ agent_executor = AgentExecutor(agent=agent,
 #lets create a chain to make our agent executor compatible with ChatRequest
 #this makes it deployable to an endpoint and make it available in playground
 def extract_user_query_string(input_messages:[dict])->str:
-    return {"input" : input_messages[-1]["content"]}
+    return {"input" : input_messages[-1].content}
 
 def output_extractor(agent_output:dict)->str:
-  return agent_output["output"]
+  response_txt = agent_output["output"]
+  return {"messages":[AIMessage(response_txt)]}
 
 helper_chain = (itemgetter("messages")
          | RunnableLambda(extract_user_query_string)
          | agent_executor
          | RunnableLambda(output_extractor) 
-         | StrOutputParser()
 )
 
 ## Tell MLflow logging where to find your chain.
