@@ -62,22 +62,22 @@ class MultiAgent:
   
   PLAN_PROMPT = """
   Given the question and information given below, find the next agent to invoke from the list of agents.
-  You MUST use only the below information, nothing else. Dont assume anything.
-  ##Information
+  If all information is available and no more agents need to be invoked, you MUST respond with just the word DONE.
+  You can break the question into smaller sub-questions and identify the next step.
+  You MUST use only the below information, nothing else. Don't assume anything.
+  * Question: {question}
+
+  * Information
   {past_agent_responses_from_state}
-
-  You must use only the agents listed below to find any extra information that is needed. 
-  You have the following agents you can use:
-
-  ##List of Agents:
+  
+  You can only pick one of the following agents:
+  * List of Agents:
   {agent_names_for_prompt}
   
   Only respond with the agent_name and question in the given output format.
-  ##Output format: 
+  * Output format: 
   agent_name:question
-
-  If the result is ready and no more action is needed respond with just the word DONE
-  ##Question: {question}
+  
   """
 
   FINAL_MESSAGE_PROMPT = """
@@ -118,12 +118,10 @@ class MultiAgent:
     self.graph = builder.compile()    
 
   def format_agent_names_for_prompt(self) -> str:    
-    log_print("format_agent_names_for_prompt")
     return "\n".join([f"- {agent_name}: {agent_details['usage']}" 
                       for agent_name, agent_details in self.available_agents.items()])
 
   def get_past_agent_responses_from_state(self,past_responses : [str]) -> str:
-    log_print("get_past_agent_responses_from_state")
     if past_responses is None or len(past_responses) == 0:
       return " - None"
     else:
@@ -141,6 +139,7 @@ class MultiAgent:
       past_agent_responses_from_state=self.get_past_agent_responses_from_state(state["agent_responses"]),
       question=question
     )    
+
     response = self.model.invoke(prompt).content.strip().split(":")
     return {
       "next_agent": response[0].strip(),
@@ -149,11 +148,9 @@ class MultiAgent:
     }
   
   def is_actions_complete(self, state:AgentState) -> bool:
-    log_print("is_actions_complete")
     return state["next_agent"] == "DONE"
   
   def is_max_tries_exceeded(self, state:AgentState) -> bool:
-    log_print("is_max_tries_exceeded")
     return state["num_attempts"] >= state["max_attempts"]
   
   def decide_next_step(self, state:AgentState) -> str :
@@ -171,7 +168,6 @@ class MultiAgent:
     return next
 
   def set_max_tries_exceeded_message(self, state:AgentState) -> dict:
-    log_print("set_max_tries_exceeded_message")
     return {
       "agent_responses" : [ f"- error_response: Number of attempts to find answer exceeded max attempts of {state['max_attempts']}" ]
     }
@@ -189,7 +185,7 @@ class MultiAgent:
     response = next_agent.invoke({"messages":[HumanMessage(content=next_question)] })
     print("RESPONSE=>> ",response)
     return {
-      "agent_responses" : [ f"- {next_question} :{response['messages'][-1].content.strip()}" ]
+      "agent_responses" : [ f"{next_question} :{response['messages'][-1].content.strip()}" ]
     }
 
   def get_user_response(self, state:AgentState) -> AIMessage:
@@ -213,7 +209,7 @@ model = ChatDatabricks(endpoint="srijit_nair_openai")
 available_agents = {
   #"covid_rag_agent" : {
   #  "chain": covid_rag_chain,
-  #  "usage": "Can be used for questions related to names and descriptions of publications on covid trials."
+  #  "usage": "Can be used for questions related to names and descriptions of publications about covid trials."
   #  },
   "covid_genie_agent" : {
     "chain": genie_chain,
@@ -228,57 +224,8 @@ available_agents = {
 # COMMAND ----------
 
 multi_agent = MultiAgent(available_agents, model)
-multi_agent.graph.invoke({"question": "How many covid trials happened last year?",
+multi_agent.graph.invoke({"question": "How many covid trials was completed in capital of france?",
                           "num_attempts": 0,
-                          "max_attempts": 10
+                          "max_attempts": 5
                           })
-
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-genie_chain.invoke({"messages":[{"content": "How many covid trials completed after last comet seen", "role": "user"}] })
-
-# COMMAND ----------
-
-md_str = "|    |   completed_trials_2024 |\n|---:|------------------------:|\n|  0 |                      84 |"
-
-md_str.count("|")
-
-# COMMAND ----------
-
-import csv
-import json
-
-def genie_markdown_tbl_to_json(markdown_table: str) -> str :
-  lines = markdown_table.split("\n")
-  dict_reader = csv.DictReader(lines, delimiter="|")
-  data = []
-  # skip first row, i.e. the row between the header and data
-  for row in list(dict_reader)[1:]:
-    #strip spaces and ignore columns without name
-    r = {k.strip(): v.strip() for k, v in row.items() if k.strip() != ""}
-    data.append(r)
-
-  return (json.dumps(data).replace("\n",""))
-
-print(genie_markdown_tbl_to_json("|    |   completed_trials_2024 |\n|---:|------------------------:|\n|  0 |                      84 |"))
-
-# COMMAND ----------
-
-helper_chain.invoke({"messages":[HumanMessage(content="what is the current year?")]})
-
-# COMMAND ----------
-
 

@@ -23,7 +23,7 @@ def genie_markdown_tbl_to_json(markdown_table: str) -> str :
   return (json.dumps(data).replace("\n",""))
 
 def question_formatter(agent_input:dict) -> str:
-  new_question = f"Do not respond in markdown. Respond in few words in simple text {agent_input['messages'][-1].content}"
+  new_question = f"Explain your answer in few words. {agent_input['messages'][-1].content}"
   return {"messages": [HumanMessage(content=new_question)]}
 
 def output_extractor(agent_output:dict)->str:
