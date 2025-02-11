@@ -26,7 +26,7 @@ from langgraph.prebuilt import create_react_agent
 
 #this config file will be used for dev and test
 #when the model is logged, the config file will be overwritten
-multi_agent_config = mlflow.models.ModelConfig(development_config="config/multi_agent_config.yaml")
+multi_agent_config = mlflow.models.ModelConfig(development_config=os.environ["MULTI_AGENT_CONFIG_FILE"])
 
 class AgentState(TypedDict):
     # The annotation tells the graph that new messages will always

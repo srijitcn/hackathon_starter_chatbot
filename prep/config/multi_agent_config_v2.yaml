@@ -1,0 +1,32 @@
+multi_agent_llm_config:
+  llm_endpoint_name: srijit_nair_openai
+  llm_parameters:
+    max_tokens: 2000
+    temperature: 0.01
+
+math_tool:
+  llm_endpoint_name: databricks-meta-llama-3-1-405b-instruct
+
+web_search_tool:
+  api_key_environment_var : BRAVE_API_KEY
+
+helper_agent_llm_config:
+  llm_endpoint_name: databricks-meta-llama-3-1-405b-instruct
+  llm_parameters:
+    max_tokens: 2000
+    temperature: 0.01
+
+genie_agent_config:
+  genie_space_id: 01efe5900183156cbb24051101f9a727
+
+genie_space_id: 01efe5900183156cbb24051101f9a727
+
+pat_environment_var: DATABRICKS_TOKEN
+workspace_url_environment_var: DATABRICKS_HOST
+
+input_example:
+  messages:
+  - content: How many covid trials was completed in capital of France?
+    role: user
+  num_attempts: 0
+  max_attempts: 5

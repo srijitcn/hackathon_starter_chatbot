@@ -1,27 +1,13 @@
-# Databricks notebook source
-# MAGIC %run ./utils/init
-
-# COMMAND ----------
-
 import os
-
-os.environ["BRAVE_API_KEY"] = dbutils.secrets.get("multi_agent","web_search_api_key")
-os.environ["VECTOR_SEARCH_PAT"] = dbutils.secrets.get("multi_agent","pat")
-os.environ["WORKSPACE_URL"] = db_host_url
-os.environ["RAG_AGENT_CONFIG_FILE"] = "config/rag_agent_config.yaml"
-os.environ["HELPER_AGENT_CONFIG_FILE"] = "config/helper_agent_config.yaml"
-os.environ["GENIE_AGENT_CONFIG_FILE"] = "config/genie_agent_config.yaml"
-
-# COMMAND ----------
-
 import mlflow
 
-#from agents.rag_agent import rag_chain, rag_config
 from agents.helper_agent import helper_chain, helper_config
-from agents.genie_agent import genie_chain, genie_config
+from agents.genie_agent import genie_chain
+
+#from agents.covid_rag_agent import covid_rag_chain, rag_chain_config
 
 from pydantic import BaseModel
-from typing import Literal, TypedDict, Annotated, List
+from typing import Literal
 from typing_extensions import TypedDict
 
 import functools
@@ -30,21 +16,24 @@ from typing import Sequence, Annotated
 
 from mlflow.langchain.output_parsers import ChatCompletionsOutputParser
 
-from langchain_core.prompts import PromptTemplate, ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.chat_models import ChatDatabricks
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, AnyMessage, SystemMessage, ToolMessage
+from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.runnables import RunnableLambda
 
-from langgraph.graph import END, StateGraph
-from langgraph.prebuilt import create_react_agent
-import logging
+from databricks_langchain.genie import GenieAgent
 
+from langgraph.graph import END, StateGraph, START
+from langgraph.prebuilt import create_react_agent
+
+import logging
 
 def log_print(msg):
     logging.warning(f"=====> {msg}")
 
-
-# COMMAND ----------
+#this config file will be used for dev and test
+#when the model is logged, the config file will be overwritten
+multi_agent_config_v2 = mlflow.models.ModelConfig(development_config=os.environ["MULTI_AGENT_CONFIG_FILE"])
 
 class AgentState(TypedDict):
     question:str
@@ -53,10 +42,14 @@ class AgentState(TypedDict):
     agent_responses : Annotated[list[str], operator.add] 
     response: str
     num_attempts: int
-    max_attempts: int 
+    max_attempts: int
 
+multi_agent_llm_config = multi_agent_config_v2.get("multi_agent_llm_config")
 
-# COMMAND ----------
+multi_agent_llm = ChatDatabricks(
+    endpoint=multi_agent_llm_config.get("llm_endpoint_name"),
+    extra_params=multi_agent_llm_config.get("llm_parameters"),
+)
 
 class MultiAgent:
   
@@ -199,9 +192,141 @@ class MultiAgent:
       "response": response
     }
 
-# COMMAND ----------
 
-model = ChatDatabricks(endpoint="srijit_nair_openai")
+# def agent_node(state, agent, name):
+#     result = agent.invoke(state)
+#     if isinstance(result, str):
+#         return {
+#             "messages": [AIMessage(content=result, name=name)]
+#         }
+#     else:
+#         return {
+#             "messages": [AIMessage(content=result["messages"][-1].content, name=name)]
+#         }
+        
+
+def get_final_message(resp):
+    print(resp)
+    return resp.get('response', 'No response provided by the multi agent.')
+
+
+###################
+#Create a genie agent
+# genie_config = multi_agent_config_v2.get("genie_agent_config")
+# genie_space_id =  genie_config.get("genie_space_id")
+# genie_agent = GenieAgent(genie_space_id=genie_space_id,
+#                          genie_agent_name="GenieAgent",
+#                          description="An agent to query Genie Database and answer queries related to COVID Trials")
+
+
+###################
+#Wire up everything
+
+# members = [
+#     {"name": "CovidRagAgent",
+#      "chain": functools.partial(agent_node, agent=covid_rag_chain, name="CovidRagAgent"), 
+#      "description": "An agent for answering questions about COVID-19 Research and Studies."
+#     },
+#     {"name": "GenieAgent",
+#      "chain": functools.partial(agent_node, agent=genie_agent, name="GenieAgent"), 
+#      "description": "An agent to query Genie Database and answer queries related to COVID Trials"
+#     },
+#     {"name": "GeneralHelperAgent",
+#      "chain": functools.partial(agent_node, agent=helper_chain, name="GeneralHelperAgent"), 
+#      "description": "A general purpose agent that can answer general questions and do mathematical calculations."
+#     }
+# ]
+
+# member_names = [member['name'] for member in members]
+# member_name_desc = "\n".join([ f"{member['name']}:{member['description']}" for member in members])
+
+# system_prompt = "You are a supervisor tasked with managing a conversation between the following workers: \n \
+#     {member_name_desc}. \
+#         Given the following user request,respond with the worker to act next. \
+#             Each worker will perform a task and respond with their results and status. \
+#                 If the question has been answered, respond with FINISH."
+
+# options = ["FINISH"] + member_names
+
+# class RouteResponse(BaseModel):
+#     next: Literal[tuple(options)]
+
+# def cleanup(in_str : str) -> str:
+#     return in_str.replace("'","").replace('"','')
+
+# def create_next(response):
+#     return RouteResponse(next=cleanup(response.content))
+
+# def supervisor_agent(state):
+#     supervisor_chain = prompt | multi_agent_llm | RunnableLambda(create_next)
+#     return supervisor_chain.invoke(state)
+
+# prompt = ChatPromptTemplate.from_messages(
+#     [
+#         ("system", system_prompt),
+#         MessagesPlaceholder(variable_name="messages"),
+#         (
+#             "system",
+#             "Given the conversation above, who should act next? Or should we FINISH? Select one of: {options}"
+#         ),
+#     ]
+# ).partial(options=str(options), member_name_desc=member_name_desc)
+
+
+# workflow = StateGraph(AgentState)
+# workflow.add_node("supervisor", supervisor_agent)
+# for member in members:
+#     workflow.add_node(member["name"], member["chain"])
+#     workflow.add_edge(member["name"], "supervisor")
+
+# # The supervisor populates the "next" field in the graph state
+# # which routes to a node or finishes
+# conditional_map = {k: k for k in member_names}
+# conditional_map["FINISH"] = END
+# workflow.add_conditional_edges("supervisor", lambda x: x["next"], conditional_map)
+# # Finally, add entrypoint
+# workflow.add_edge(START, "supervisor")
+
+# graph = workflow.compile()
+
+def convert_chatcompletion_to_invoke_format(input_data):
+    """
+    Convert an input in ChatCompletion format to the format expected by
+    multi_agent.graph.
+
+    Expected ChatCompletion input format:
+      {
+          "messages": [
+              {"role": "user", "content": "How many covid trials was completed in capital of france?"},
+              ...  # optionally, more messages
+          ],
+          "num_attempts": <int>,
+          "max_attempts": <int>
+      }
+
+    Converted payload for multi_agent.graph:
+      {
+          "question": "How many covid trials was completed in capital of france?",
+          "num_attempts": <int>,
+          "max_attempts": <int>
+      }
+    """
+    # Make a shallow copy so as not to modify the original payload
+    payload = input_data.copy()
+    
+    # Extract the first user message from the messages list.
+    user_question = None
+    for msg in payload.get("messages", []):
+        if msg.get("role") == "user":
+            user_question = msg.get("content")
+            break
+    
+    if not user_question:
+        raise ValueError("No user message found in input messages.")
+    
+    # Insert the 'question' key that multi_agent.graph expects.
+    payload["question"] = user_question
+    return payload
 
 available_agents = {
   #"covid_rag_agent" : {
@@ -218,10 +343,10 @@ available_agents = {
     }
 }
 
-# COMMAND ----------
+multi_agent = MultiAgent(available_agents, multi_agent_llm)
 
-multi_agent = MultiAgent(available_agents, model)
-multi_agent.graph.invoke({"question": "How many covid trials was completed in capital of france?",
-                          "num_attempts": 0,
-                          "max_attempts": 5
-                          })
+# parse the output from the graph to get the final message, and then format into ChatCompletions
+graph_with_parser_v2 = RunnableLambda(convert_chatcompletion_to_invoke_format) | multi_agent.graph | RunnableLambda(get_final_message)
+
+## Tell MLflow logging where to find your chain.
+mlflow.models.set_model(model=graph_with_parser_v2)
