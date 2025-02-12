@@ -46,6 +46,23 @@ def log_print(msg):
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC #### LangGraph Agent Decision Flowchart
+# MAGIC
+# MAGIC ![](./resources/flowchart.png)
+
+# COMMAND ----------
+
+graph_with_parser.invoke({
+    "messages": [
+        {"role": "user", "content": "How many covid trials was completed in capital of france?"}
+    ],
+    "num_attempts": 0,
+    "max_attempts": 5
+})
+
+# COMMAND ----------
+
 class AgentState(TypedDict):
     question:str
     next_agent: str
@@ -73,6 +90,7 @@ class MultiAgent:
   You can only pick one of the following agents:
   * List of Agents:
   {agent_names_for_prompt}
+  
   
   Only respond with the agent_name and question in the given output format.
   * Output format: 
