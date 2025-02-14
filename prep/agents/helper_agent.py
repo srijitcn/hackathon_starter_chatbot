@@ -14,7 +14,7 @@ from langchain_community.tools import BraveSearch
 from langchain.agents import AgentExecutor, create_react_agent, create_tool_calling_agent
 from langchain import hub
 from langchain_core.output_parsers import StrOutputParser
-from mlflow.langchain.output_parsers import ChatCompletionsOutputParser
+from langchain_core.messages import AIMessage
 from langchain.schema.runnable import RunnableLambda, RunnablePassthrough
 from operator import itemgetter
 
@@ -23,7 +23,8 @@ from typing import Optional, Type, List, Union
 
 #this config file will be used for dev and test
 #when the model is logged, the config file will be overwritten
-helper_chain_config = mlflow.models.ModelConfig(development_config="config/helper_agent_config.yaml")
+
+helper_config = mlflow.models.ModelConfig(development_config=os.environ.get("HELPER_AGENT_CONFIG_FILE"))
 
 ###################################
 # Math Tool
@@ -145,17 +146,17 @@ def get_todays_date(unnecessary:str):
 # It provides a flexible and customizable way to run an agent, allowing users to specify the tools and memory to be used.
 
 #instantiate the tools
-math_tool_model_endpoint =  helper_chain_config.get("math_tool").get("llm_endpoint_name")
+math_tool_model_endpoint =  helper_config.get("math_tool").get("llm_endpoint_name")
 math_tool = MathTool(chat_model_endpoint_name=math_tool_model_endpoint)
 
-api_key_env_var = helper_chain_config.get("web_search_tool").get("api_key_environment_var").upper()
+api_key_env_var = helper_config.get("web_search_tool").get("api_key_environment_var").upper()
 web_tool = WebSearchTool(api_key=os.environ[api_key_env_var]).get_tool()
 
 
 #agent
 
 #lets use the llama 3.1 405b model for our Agent
-helper_agent_model_config = helper_chain_config.get("helper_agent_llm_config")
+helper_agent_model_config = helper_config.get("helper_agent_llm_config")
 #define the model class for agent that uses the endpoint
 agent_chat_model = ChatDatabricks(
     endpoint=helper_agent_model_config.get("llm_endpoint_name"),
@@ -183,16 +184,17 @@ agent_executor = AgentExecutor(agent=agent,
 #lets create a chain to make our agent executor compatible with ChatRequest
 #this makes it deployable to an endpoint and make it available in playground
 def extract_user_query_string(input_messages:[dict])->str:
-    return {"input" : input_messages[-1]["content"]}
+    return {"input" : input_messages[-1].content}
 
 def output_extractor(agent_output:dict)->str:
-  return agent_output["output"]
+  response_txt = agent_output["output"]
+  return {"messages":[AIMessage(response_txt)]}
 
 helper_chain = (itemgetter("messages")
          | RunnableLambda(extract_user_query_string)
          | agent_executor
          | RunnableLambda(output_extractor) 
-         | StrOutputParser()
 )
 
-
+## Tell MLflow logging where to find your chain.
+mlflow.models.set_model(model=helper_chain)

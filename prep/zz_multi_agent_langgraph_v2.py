@@ -1,11 +1,27 @@
+# Databricks notebook source
+# MAGIC %run ./utils/init
+
+# COMMAND ----------
+
 import os
+
+os.environ["BRAVE_API_KEY"] = dbutils.secrets.get("multi_agent","web_search_api_key")
+os.environ["VECTOR_SEARCH_PAT"] = dbutils.secrets.get("multi_agent","pat")
+os.environ["WORKSPACE_URL"] = db_host_url
+os.environ["RAG_AGENT_CONFIG_FILE"] = "config/rag_agent_config.yaml"
+os.environ["HELPER_AGENT_CONFIG_FILE"] = "config/helper_agent_config.yaml"
+os.environ["GENIE_AGENT_CONFIG_FILE"] = "config/genie_agent_config.yaml"
+
+# COMMAND ----------
+
 import mlflow
 
+#from agents.rag_agent import rag_chain, rag_config
 from agents.helper_agent import helper_chain, helper_config
-from agents.genie_agent import genie_chain
+from agents.genie_agent import genie_chain, genie_config
 
 from pydantic import BaseModel
-from typing import Literal
+from typing import Literal, TypedDict, Annotated, List
 from typing_extensions import TypedDict
 
 import functools
@@ -14,24 +30,21 @@ from typing import Sequence, Annotated
 
 from mlflow.langchain.output_parsers import ChatCompletionsOutputParser
 
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import PromptTemplate, ChatPromptTemplate, MessagesPlaceholder
 from langchain.chat_models import ChatDatabricks
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
+from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, AnyMessage, SystemMessage, ToolMessage
 from langchain_core.runnables import RunnableLambda
 
-from databricks_langchain.genie import GenieAgent
-
-from langgraph.graph import END, StateGraph, START
+from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import create_react_agent
-
 import logging
+
 
 def log_print(msg):
     logging.warning(f"=====> {msg}")
 
-#this config file will be used for dev and test
-#when the model is logged, the config file will be overwritten
-multi_agent_config = mlflow.models.ModelConfig(development_config=os.environ["MULTI_AGENT_CONFIG_FILE"])
+
+# COMMAND ----------
 
 class AgentState(TypedDict):
     question:str
@@ -40,14 +53,10 @@ class AgentState(TypedDict):
     agent_responses : Annotated[list[str], operator.add] 
     response: str
     num_attempts: int
-    max_attempts: int
+    max_attempts: int 
 
-multi_agent_llm_config = multi_agent_config.get("multi_agent_llm_config")
 
-multi_agent_llm = ChatDatabricks(
-    endpoint=multi_agent_llm_config.get("llm_endpoint_name"),
-    extra_params=multi_agent_llm_config.get("llm_parameters"),
-)
+# COMMAND ----------
 
 class MultiAgent:
   
@@ -189,50 +198,10 @@ class MultiAgent:
     return {
       "response": response
     }
-        
 
-def get_final_message(resp):
-    print(resp)
-    return resp.get('response', 'No response provided by the multi agent.')
+# COMMAND ----------
 
-def convert_chatcompletion_to_invoke_format(input_data):
-    """
-    Convert an input in ChatCompletion format to the format expected by
-    multi_agent.graph.
-
-    Expected ChatCompletion input format:
-      {
-          "messages": [
-              {"role": "user", "content": "How many covid trials was completed in capital of france?"},
-              ...  # optionally, more messages
-          ],
-          "num_attempts": <int>,
-          "max_attempts": <int>
-      }
-
-    Converted payload for multi_agent.graph:
-      {
-          "question": "How many covid trials was completed in capital of france?",
-          "num_attempts": <int>,
-          "max_attempts": <int>
-      }
-    """
-    # Make a shallow copy so as not to modify the original payload
-    payload = input_data.copy()
-    
-    # Extract the first user message from the messages list.
-    user_question = None
-    for msg in payload.get("messages", []):
-        if msg.get("role") == "user":
-            user_question = msg.get("content")
-            break
-    
-    if not user_question:
-        raise ValueError("No user message found in input messages.")
-    
-    # Insert the 'question' key that multi_agent.graph expects.
-    payload["question"] = user_question
-    return payload
+model = ChatDatabricks(endpoint="srijit_nair_openai")
 
 available_agents = {
   #"covid_rag_agent" : {
@@ -249,10 +218,10 @@ available_agents = {
     }
 }
 
-multi_agent = MultiAgent(available_agents, multi_agent_llm)
+# COMMAND ----------
 
-# parse the output from the graph to get the final message, and then format into ChatCompletions
-graph_with_parser = RunnableLambda(convert_chatcompletion_to_invoke_format) | multi_agent.graph | RunnableLambda(get_final_message)
-
-## Tell MLflow logging where to find your chain.
-mlflow.models.set_model(model=graph_with_parser)
+multi_agent = MultiAgent(available_agents, model)
+multi_agent.graph.invoke({"question": "How many covid trials was completed in capital of france?",
+                          "num_attempts": 0,
+                          "max_attempts": 5
+                          })

@@ -4,10 +4,13 @@
 # COMMAND ----------
 
 import os
-
 os.environ["BRAVE_API_KEY"] = dbutils.secrets.get("multi_agent","web_search_api_key")
+os.environ["HELPER_AGENT_CONFIG_FILE"] = "config/helper_agent_config.yaml"
 
-from agents.helper_agent import helper_chain, helper_chain_config
+# COMMAND ----------
+
+
+from agents.helper_agent import helper_chain
 
 # COMMAND ----------
 
