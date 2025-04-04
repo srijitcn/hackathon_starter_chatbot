@@ -1,5 +1,5 @@
 
-llm_endpoint_name: databricks-meta-llama-3-3-70b-instruct
+llm_endpoint_name: srijit_nair_openai
 llm_parameters:
   max_tokens: 1500
   temperature: 0.01
@@ -8,15 +8,11 @@ llm_prompt_template: "You are an assistant that answers questions.
       Some pieces of context may be irrelevant, in which case you should not use them to form the answer.
       Only answer question from the context, do not add anymore information. 
       If the question is not relevant to COVID Trials, only respond with 'Irrelevant Question'.
-      \n\nContext: {context},
+      \n\nContext: {supporting_documents},
       \n\nQuestion:{query}"
 retriever_config:
   vector_search_endpoint_name: covid_trials_vs_endpoint
   vector_search_index: main.covid_trials.covid_data_title_index
-  workspace_url_environment_var: DATABRICKS_HOST
-  pat_environment_var: DATABRICKS_TOKEN
-  client_id_environment_var: VECTOR_SEARCH_CLIENT_ID
-  client_secret_environment_var: VECTOR_SEARCH_CLIENT_SECRET
   text_column: "title"
   retrieve_columns: ["title","interventions","url"]
   parameters:

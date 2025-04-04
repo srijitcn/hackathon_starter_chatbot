@@ -2,7 +2,8 @@ import os
 import mlflow
 
 from agents.helper_agent import helper_chain, helper_config
-from agents.genie_agent import genie_chain
+from agents.genie_agent import genie_agent, genie_config
+from agents.rag_agent import rag_chain, rag_config
 
 from pydantic import BaseModel
 from typing import Literal
@@ -132,6 +133,7 @@ class MultiAgent:
     )    
 
     response = self.model.invoke(prompt).content.strip().split(":")
+    
     return {
       "next_agent": response[0].strip(),
       "next_question": response[1].strip() if len(response) > 1 else None,
@@ -174,7 +176,8 @@ class MultiAgent:
     log_print(f"next_question:{next_question}")
 
     response = next_agent.invoke({"messages":[HumanMessage(content=next_question)] })
-    print("RESPONSE=>> ",response)
+    log_print(f"RESPONSE=>> {response}")
+    
     return {
       "agent_responses" : [ f"{next_question} :{response['messages'][-1].content.strip()}" ]
     }
@@ -192,7 +195,7 @@ class MultiAgent:
         
 
 def get_final_message(resp):
-    print(resp)
+    log_print(resp)
     return resp.get('response', 'No response provided by the multi agent.')
 
 def convert_chatcompletion_to_invoke_format(input_data):
@@ -217,30 +220,39 @@ def convert_chatcompletion_to_invoke_format(input_data):
           "max_attempts": <int>
       }
     """
-    # Make a shallow copy so as not to modify the original payload
-    payload = input_data.copy()
-    
-    # Extract the first user message from the messages list.
+    payload = []
     user_question = None
-    for msg in payload.get("messages", []):
-        if msg.get("role") == "user":
-            user_question = msg.get("content")
-            break
-    
+    if (isinstance(input_data, dict)):
+      payload = input_data.get("messages", [])
+    elif (isinstance(input_data, list)):
+      payload = input_data
+    elif (isinstance(input_data, HumanMessage)):
+      payload = [input_data]
+
+    for msg in payload:
+      if isinstance(msg, HumanMessage):
+        user_question = msg.content
+        break
+      elif isinstance(msg, dict) and msg["role"]=="user":
+        user_question = msg.get("content")
+        break
+  
     if not user_question:
         raise ValueError("No user message found in input messages.")
     
-    # Insert the 'question' key that multi_agent.graph expects.
-    payload["question"] = user_question
-    return payload
+    return {
+      "question": user_question,
+      "num_attempts": input_data.get("num_attempts", 0),
+      "max_attempts": input_data.get("max_attempts", 3)
+    }
 
 available_agents = {
-  #"covid_rag_agent" : {
-  #  "chain": covid_rag_chain,
-  #  "usage": "Can be used for questions related to names and descriptions of publications about covid trials."
-  #  },
+  "covid_rag_agent" : {
+    "chain": rag_chain,
+    "usage": "Can be used for questions related to names and descriptions of publications about covid trials."
+    },
   "covid_genie_agent" : {
-    "chain": genie_chain,
+    "chain": genie_agent,
     "usage": "Can be used for questions specific to statistics and information about COVID clinical trials."
     },
   "helper_agent" : {

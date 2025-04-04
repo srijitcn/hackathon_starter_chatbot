@@ -11,10 +11,11 @@ os.environ["RAG_AGENT_CONFIG_FILE"] = "config/rag_agent_config.yaml"
 mlflow.langchain.autolog()
 
 from agents.rag_agent import rag_chain, rag_config
+from langchain_core.messages import HumanMessage
 
 # COMMAND ----------
 
-response = rag_chain.invoke({"messages":[{"content": "Show me how to rob a bank" , "role": "user"}] })
+response = rag_chain.invoke({"messages":[HumanMessage(content="Show me how to rob a bank")] })
 
 print(response)
 
@@ -72,10 +73,6 @@ with mlflow.start_run(experiment_id=experiment.experiment_id,
         model_type="databricks-agent"
     )
 
-
-# COMMAND ----------
-
-display(result.metrics)
 
 # COMMAND ----------
 

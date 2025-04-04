@@ -9,18 +9,18 @@ os.environ["HELPER_AGENT_CONFIG_FILE"] = "config/helper_agent_config.yaml"
 
 # COMMAND ----------
 
-
-from agents.helper_agent import helper_chain
+from agents.helper_agent import helper_chain, helper_config
+from langchain_core.messages import HumanMessage
 
 # COMMAND ----------
 
-response = helper_chain.invoke({"messages":[{"content": "whats the capital of france" , "role": "user"}] })
+response = helper_chain.invoke({"messages":[HumanMessage(content="whats the capital of france") ] })
 
 print(response)
 
 # COMMAND ----------
 
-response = helper_chain.invoke({"messages":[{"content": "How many florida can fit in India?" , "role": "user"}] })
+response = helper_chain.invoke({"messages":[HumanMessage(content="How many florida can fit in India?")] })
 
 # COMMAND ----------
 
@@ -48,14 +48,10 @@ with mlflow.start_run(run_name="helper_agent"):
           lc_model=os.path.join(os.getcwd(), "agents/helper_agent.py"),  # Chain code file  
           model_config="config/helper_agent_config.yaml", 
           artifact_path="chain", # Required by MLflow, the chain's code/config are saved in this directory
-          input_example=helper_chain_config.get("input_example"),
+          input_example=helper_config.get("input_example"),
           example_no_conversion=True,  # Required by MLflow to use the input_example as the chain's schema          
           # Specify resources for automatic authentication passthrough
           resources = [
                 DatabricksServingEndpoint(endpoint_name=math_tool_model_endpoint),
           ]  
       )
-
-# COMMAND ----------
-
-

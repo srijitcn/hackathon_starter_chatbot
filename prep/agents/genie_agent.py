@@ -17,13 +17,38 @@ def genie_markdown_tbl_to_json(markdown_table: str) -> str :
   # skip first row, i.e. the row between the header and data
   for row in list(dict_reader)[1:]:
     #strip spaces and ignore columns without name
+    print(row)
     r = {k.strip(): v.strip() for k, v in row.items() if k.strip() != ""}
     data.append(r)
 
   return (json.dumps(data).replace("\n",""))
 
-def question_formatter(agent_input:dict) -> str:
-  new_question = f"Explain your answer in few words. {agent_input['messages'][-1].content}"
+
+def extract_user_query_string(input_data):
+    payload = []
+    user_question = ""
+    if (isinstance(input_data, dict)):
+      payload = input_data.get("messages", [])
+    elif (isinstance(input_data, list)):
+      payload = input_data
+    elif (isinstance(input_data, HumanMessage)):
+      payload = [input_data]
+
+    for msg in payload:
+      if isinstance(msg, HumanMessage):
+        user_question = msg.content
+        break
+      elif isinstance(msg, dict) and msg["role"]=="user":
+        user_question = msg.get("content")
+        break
+
+    if not user_question:
+      raise ValueError("No user message found in input messages.")
+    return user_question
+  
+def question_formatter(agent_input) -> str:
+  user_question = extract_user_query_string(agent_input)
+  new_question = f"Explain your answer in few words. {user_question}"
   return {"messages": [HumanMessage(content=new_question)]}
 
 def output_extractor(agent_output:dict)->str:

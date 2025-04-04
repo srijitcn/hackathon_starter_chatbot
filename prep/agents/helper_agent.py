@@ -14,7 +14,7 @@ from langchain_community.tools import BraveSearch
 from langchain.agents import AgentExecutor, create_react_agent, create_tool_calling_agent
 from langchain import hub
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain.schema.runnable import RunnableLambda, RunnablePassthrough
 from operator import itemgetter
 
@@ -183,15 +183,37 @@ agent_executor = AgentExecutor(agent=agent,
 
 #lets create a chain to make our agent executor compatible with ChatRequest
 #this makes it deployable to an endpoint and make it available in playground
-def extract_user_query_string(input_messages:[dict])->str:
-    return {"input" : input_messages[-1].content}
+
+#handle different types possible inputs dicts, array of HumanMessage etc
+def extract_user_query_string(input_data):
+    payload = []
+    user_question = None
+    
+    if (isinstance(input_data, dict)):
+        payload = input_data.get("messages", [])
+    elif (isinstance(input_data, list)):
+        payload = input_data
+    elif (isinstance(input_data, HumanMessage)):
+        payload = [input_data]
+
+    for msg in payload:
+        if isinstance(msg, HumanMessage):
+            user_question = msg.content
+            break
+        elif isinstance(msg, dict) and msg["role"]=="user":
+            user_question = msg.get("content")
+            break
+
+    if not user_question:
+        raise ValueError("No user message found in input messages.")
+
+    return {"input" : user_question}
 
 def output_extractor(agent_output:dict)->str:
   response_txt = agent_output["output"]
   return {"messages":[AIMessage(response_txt)]}
 
-helper_chain = (itemgetter("messages")
-         | RunnableLambda(extract_user_query_string)
+helper_chain = (RunnableLambda(extract_user_query_string)
          | agent_executor
          | RunnableLambda(output_extractor) 
 )
