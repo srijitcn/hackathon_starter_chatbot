@@ -24,15 +24,13 @@ from databricks_langchain.genie import GenieAgent
 
 from langgraph.graph import END, StateGraph, START
 from langgraph.prebuilt import create_react_agent
-
 import logging
 
 def log_print(msg):
     logging.warning(f"=====> {msg}")
 
 #this config file will be used for dev and test
-#when the model is logged, the config file will be overwritten
-multi_agent_config = mlflow.models.ModelConfig(development_config=os.environ["MULTI_AGENT_CONFIG_FILE"])
+multi_agent_config = mlflow.models.ModelConfig(development_config=os.environ.get("MULTI_AGENT_CONFIG_FILE")).get("multi_agent_config")
 
 class AgentState(TypedDict):
     question:str
@@ -43,7 +41,7 @@ class AgentState(TypedDict):
     num_attempts: int
     max_attempts: int
 
-multi_agent_llm_config = multi_agent_config.get("multi_agent_llm_config")
+multi_agent_llm_config = multi_agent_config.get("llm_config")
 
 multi_agent_llm = ChatDatabricks(
     endpoint=multi_agent_llm_config.get("llm_endpoint_name"),
@@ -56,6 +54,7 @@ class MultiAgent:
   Given the question and information given below, find the next agent to invoke from the list of agents.
   If all information is available and no more agents need to be invoked, you MUST respond with just the word DONE.
   You can break the question into smaller sub-questions and identify the next step.
+  If the question is not relevant to COVID Trials, only respond with 'Irrelevant Question' and respond DONE
   You MUST use only the below information, nothing else. Don't assume anything.
   * Question: {question}
 

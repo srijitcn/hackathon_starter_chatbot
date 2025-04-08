@@ -1,0 +1,12 @@
+
+command: [
+  "streamlit", 
+  "run",
+  "app.py"
+]
+
+env:
+  - name: STREAMLIT_BROWSER_GATHER_USAGE_STATS
+    value: "false"
+  - name: "SERVING_ENDPOINT"
+    value: "agents_main-covid_trials-multi_agent_langgraph"

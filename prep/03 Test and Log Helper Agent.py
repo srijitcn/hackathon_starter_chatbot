@@ -25,7 +25,7 @@ response = helper_chain.invoke({"messages":[HumanMessage(content="How many flori
 # COMMAND ----------
 
 #get the resources required by the chain
-agent_config = mlflow.models.ModelConfig(development_config="config/helper_agent_config.yaml")
+agent_config = mlflow.models.ModelConfig(development_config="config/helper_agent_config.yaml").get("helper_agent_config")
 
 math_tool_model_endpoint =  agent_config.get("math_tool").get("llm_endpoint_name")
 

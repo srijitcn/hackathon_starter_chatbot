@@ -2,13 +2,16 @@ import mlflow
 import os
 import csv
 import json
-from databricks_langchain.genie import GenieAgent
 from operator import itemgetter
+
+from databricks_langchain.genie import GenieAgent
+from databricks.sdk import WorkspaceClient
+from databricks.sdk.credentials_provider import ModelServingUserCredentials
 from langchain.schema.runnable import RunnableLambda, RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import HumanMessage, AIMessage
 
-genie_config = mlflow.models.ModelConfig(development_config=os.environ.get("GENIE_AGENT_CONFIG_FILE"))
+genie_config = mlflow.models.ModelConfig(development_config=os.environ.get("GENIE_AGENT_CONFIG_FILE")).get("genie_agent_config")
 
 def genie_markdown_tbl_to_json(markdown_table: str) -> str :
   lines = markdown_table.split("\n")
@@ -64,11 +67,18 @@ def output_extractor(agent_output:dict)->str:
 def output_formatter(response_str:str) -> dict:
   return {"messages": [AIMessage(content=f"Answer is : {response_str}") ]}
 
+#set authentication to on behalf user
+#user_client = WorkspaceClient(credentials_strategy=ModelServingUserCredentials())
+user_client=WorkspaceClient(
+        host=os.getenv("DATABRICKS_HOST"),
+        token=os.getenv("DATABRICKS_TOKEN"),
+    )
 
 #Create a genie agent
 genie_space_id =  genie_config.get("genie_space_id")
 genie_agent = GenieAgent(genie_space_id=genie_space_id,
                          genie_agent_name="GenieAgent",
+                         client=user_client,
                          description="An agent to query Genie Database and answer queries related to COVID Trials")
 
 

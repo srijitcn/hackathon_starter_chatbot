@@ -3,6 +3,11 @@
 
 # COMMAND ----------
 
+from databricks_langchain.genie import GenieAgent
+
+
+# COMMAND ----------
+
 import os
 
 os.environ["GENIE_AGENT_CONFIG_FILE"] = "config/genie_agent_config.yaml"

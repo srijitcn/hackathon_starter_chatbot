@@ -1,21 +1,22 @@
-math_tool:
-  llm_endpoint_name: srijit_nair_openai
+helper_agent_config:
+  math_tool:
+    llm_endpoint_name: srijit_nair_openai
 
-web_search_tool:
-  api_key_environment_var : BRAVE_API_KEY
+  web_search_tool:
+    api_key_environment_var : BRAVE_API_KEY
 
-helper_agent_input_example:
-  messages:
-  - content: How many Florida fit in India?
-    role: user
+  helper_agent_input_example:
+    messages:
+    - content: How many Florida fit in India?
+      role: user
 
-helper_agent_llm_config:
-  llm_endpoint_name: srijit_nair_openai
-  llm_parameters:
-    max_tokens: 2000
-    temperature: 0.01
+  helper_agent_llm_config:
+    llm_endpoint_name: srijit_nair_openai
+    llm_parameters:
+      max_tokens: 2000
+      temperature: 0.01
 
-input_example:
-  messages:
-  - content: How many Florida fit in India?
-    role: user
+  input_example:
+    messages:
+    - content: How many Florida fit in India?
+      role: user

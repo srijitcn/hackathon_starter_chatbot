@@ -22,9 +22,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, Type, List, Union
 
 #this config file will be used for dev and test
-#when the model is logged, the config file will be overwritten
-
-helper_config = mlflow.models.ModelConfig(development_config=os.environ.get("HELPER_AGENT_CONFIG_FILE"))
+helper_config = mlflow.models.ModelConfig(development_config=os.environ.get("HELPER_AGENT_CONFIG_FILE")).get("helper_agent_config")
 
 ###################################
 # Math Tool

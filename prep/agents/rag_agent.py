@@ -3,24 +3,27 @@ import os
 import json
 
 from databricks.vector_search.client import VectorSearchClient
+from databricks.vector_search.utils import CredentialStrategy
 from databricks.vector_search.index import VectorSearchIndex
 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_databricks import ChatDatabricks
+from databricks_langchain import ChatDatabricks
 from langchain.vectorstores import DatabricksVectorSearch
 from langchain_core.messages import AIMessage, HumanMessage
 from operator import itemgetter
-
 from mlflow.models import ModelConfig
+
 
 mlflow.langchain.autolog()
 
-rag_config = mlflow.models.ModelConfig(development_config=os.environ.get("RAG_AGENT_CONFIG_FILE"))
+rag_config = mlflow.models.ModelConfig(development_config=os.environ.get("RAG_AGENT_CONFIG_FILE")).get("rag_agent_config")
+
 retriever_config=rag_config.get("retriever_config")
 
-vs_client = VectorSearchClient()
+vs_client = VectorSearchClient(); #credential_strategy=CredentialStrategy.MODEL_SERVING_USER_CREDENTIALS)
+
 vs_index = vs_client.get_index(
     endpoint_name=retriever_config.get("vector_search_endpoint_name"),
     index_name=retriever_config.get("vector_search_index"),
