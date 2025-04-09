@@ -29,8 +29,9 @@ if "visibility" not in st.session_state:
     st.session_state.visibility = "visible"
     st.session_state.disabled = False
 
-st.title("COVID-19 Trials Agent")
-st.write(f"I can help you with questions related to COVID-19 Clinical Trials.")
+st.title(":material/coronavirus: CoviVader ")
+st.markdown("#### May the Facts Be With You")
+st.write(f"I can help you with questions related to Studies on COVID-19 Clinical Trials.")
 
 # Initialize chat history
 if "messages" not in st.session_state:
@@ -60,7 +61,14 @@ if prompt := st.chat_input("How many trials were conducted in New York?"):
                 messages=messages,
                 max_tokens=400,
             )
+            
+            print(f"Service reponse:{response}")
+            
             assistant_response = response.choices[0].message.content
+
+            print(f"Assistant_response: {assistant_response}")
+
+
             st.markdown(assistant_response)
         except Exception as e:
             st.error(f"Error querying model: {e}")

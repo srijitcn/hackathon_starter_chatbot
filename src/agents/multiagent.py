@@ -75,6 +75,7 @@ class MultiAgent:
   Provide a final answer to the user explaining the answer in a profesional way. 
   You must use only the below information to answer the question, nothing else.
   If there is an error_response, send just the error response back to the user.
+  If there are any references to documents, list all the document references at the end with URL link.
   You MUST use only the below information to answer the question, nothing else:
   ##Information
   {past_agent_responses_from_state}

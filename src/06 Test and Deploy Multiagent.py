@@ -167,7 +167,7 @@ env:
   - name: STREAMLIT_BROWSER_GATHER_USAGE_STATS
     value: "false"
   - name: "SERVING_ENDPOINT"
-    value: "{endpoint_name}"
+    value: "{deployment_info.endpoint_name}"
 """
 
 try:
